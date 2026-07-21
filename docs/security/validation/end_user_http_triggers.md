@@ -44,15 +44,48 @@ You still use **curl for setup**; the trigger is a tiny Python script (`pip inst
 
 ### 1a. Setup with curl (valid data only)
 
+Quick-create with only `vectorFieldType` works on newer builds. If you get
+`dimension is required for quickly create collection(... COSINE)` with
+`actual=collectionName`, your image is treating the request as dense FloatVector
+(likely older REST that ignores `vectorFieldType`). Use the **explicit schema** form instead:
+
 ```bash
-# Create a sparse collection (quick setup)
+# Create a sparse collection (explicit schema — portable across versions)
 curl -s -X POST "http://HOST:19530/v2/vectordb/collections/create" \
   -H 'Content-Type: application/json' \
   -d '{
     "collectionName": "sparse_lab",
-    "vectorFieldType": "SparseFloatVector"
-  }'
+    "schema": {
+      "autoID": false,
+      "fields": [
+        {
+          "fieldName": "id",
+          "dataType": "Int64",
+          "isPrimary": true
+        },
+        {
+          "fieldName": "vector",
+          "dataType": "SparseFloatVector"
+        }
+      ]
+    },
+    "indexParams": [
+      {
+        "fieldName": "vector",
+        "metricType": "IP",
+        "indexName": "vector",
+        "params": { "index_type": "SPARSE_INVERTED_INDEX" }
+      }
+    ]
+  }' | jq
 
+# Optional newer quick-create (omit dimension; do NOT send dimension for sparse):
+# curl ... -d '{"collectionName":"sparse_lab","vectorFieldType":"SparseFloatVector","metricType":"IP"}'
+```
+
+Then insert / load:
+
+```bash
 # Insert one valid sparse row (JSON map → server builds 8-aligned bytes)
 curl -s -X POST "http://HOST:19530/v2/vectordb/entities/insert" \
   -H 'Content-Type: application/json' \
@@ -61,12 +94,12 @@ curl -s -X POST "http://HOST:19530/v2/vectordb/entities/insert" \
     "data": [
       {"id": 1, "vector": {"1": 0.5, "10": 0.25}}
     ]
-  }'
+  }' | jq
 
 # Load
 curl -s -X POST "http://HOST:19530/v2/vectordb/collections/load" \
   -H 'Content-Type: application/json' \
-  -d '{"collectionName": "sparse_lab"}'
+  -d '{"collectionName": "sparse_lab"}' | jq
 ```
 
 Wait until load completes:
