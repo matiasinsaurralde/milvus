@@ -63,15 +63,17 @@ go test -tags dynamic,test -gcflags="all=-N -l" -count=1 \
 
 ## 3. End-to-end on ASAN-instrumented querynode / standalone
 
-Requires a Milvus build with segcore linked with AddressSanitizer (or running under a heap debugger).
+**Prefer the curl + Python gRPC checklist:** [end_user_http_triggers.md](./end_user_http_triggers.md) §1.
 
-1. Build core/querynode with ASAN (project-specific; typically `-DENABLE_ASAN=ON` / sanitizer flags in the CMake presets used by your lab).
-2. Start standalone/cluster with ASAN `LD_PRELOAD` / instrumented binary; keep auth at default (off) or use any user who can Search.
-3. Create a collection with a `SparseFloatVector` field; insert at least one **valid** sparse row (lengths multiple of 8) and load.
-4. Issue a Search whose placeholder group contains one sparse row of length `8*N+7` (e.g. 71 bytes of arbitrary content) with `PlaceholderType_SparseFloatVector`.
-5. **Pass criteria (bug present):** ASAN reports `heap-buffer-overflow` in a frame involving `CopyAndWrapSparseRow` / `memcpy` / `FastMemcpy`, **or** process later crashes from heap corruption. Note: after the overflow, `AssertInfo` throws `SegcoreError`, which is caught at the cgo boundary — so the RPC may return a clean error **after** the heap is already corrupted (silent per-request corruption).
+Requires a Milvus build with segcore linked with AddressSanitizer (or running under a heap debugger) only if you want ASAN proof; a stock docker image still exercises the overflow (usually as a returned error after the bad memcpy).
+
+1. Setup collection/insert/load with curl (valid sparse JSON maps).
+2. Run `harness/sparse_search_trigger.py` (gRPC Search with 71-byte sparse placeholder).
+3. **Pass criteria (bug present):** ASAN reports `heap-buffer-overflow` in `CopyAndWrapSparseRow` / `memcpy` / `FastMemcpy`, **or** RPC returns a plan/parameter error after the overflow already occurred. Note: `AssertInfo` throws `SegcoreError` after the copy; cgo catches it — so the client may see a clean error while the heap was already corrupted.
 
 Without ASAN, single-request crashes may be rare (≤7 bytes); repeated malformed searches increase chance of delayed crash.
+
+**REST-only curl cannot trigger this** — JSON sparse maps are re-encoded to `len%8==0` before placeholders are built.
 
 ## Fix verification
 
