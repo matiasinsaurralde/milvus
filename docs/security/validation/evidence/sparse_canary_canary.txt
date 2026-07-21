@@ -1,0 +1,4 @@
+size=71 alloc=64 overflow_bytes=7 canary_corrupted=YES
+validate failed AFTER memcpy
+caught after overflow: invalid size
+VALIDATION_OK: overflow-before-validate reproduced

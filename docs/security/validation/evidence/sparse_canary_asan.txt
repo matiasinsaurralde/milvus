@@ -1,0 +1,53 @@
+size=71 alloc=64 overflow_bytes=7 canary_corrupted=YES
+=================================================================
+==41003==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x506000000060 at pc 0x7fbcb5938303 bp 0x7ffc610a6d70 sp 0x7ffc610a6518
+WRITE of size 71 at 0x506000000060 thread T0
+    #0 0x7fbcb5938302 in memcpy ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors_memintrinsics.inc:115
+    #1 0x55e1adb69695 in buggy_copy_and_wrap /tmp/milvus-sec-validate/sparse_canary.cpp:36
+    #2 0x55e1adb698cb in main /tmp/milvus-sec-validate/sparse_canary.cpp:56
+    #3 0x7fbcb52c01c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 8e9fd827446c24067541ac5390e6f527fb5947bb)
+    #4 0x7fbcb52c028a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 8e9fd827446c24067541ac5390e6f527fb5947bb)
+    #5 0x55e1adb69344 in _start (/tmp/milvus-sec-validate/sparse_canary_asan+0x2344) (BuildId: b8b1c7e7ffd15f7015a673338995bd931f8c698c)
+
+0x506000000060 is located 0 bytes after 64-byte region [0x506000000020,0x506000000060)
+allocated by thread T0 here:
+    #0 0x7fbcb593b6c8 in operator new[](unsigned long) ../../../../src/libsanitizer/asan/asan_new_delete.cpp:98
+    #1 0x55e1adb6967a in buggy_copy_and_wrap /tmp/milvus-sec-validate/sparse_canary.cpp:35
+    #2 0x55e1adb698cb in main /tmp/milvus-sec-validate/sparse_canary.cpp:56
+    #3 0x7fbcb52c01c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 8e9fd827446c24067541ac5390e6f527fb5947bb)
+    #4 0x7fbcb52c028a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 8e9fd827446c24067541ac5390e6f527fb5947bb)
+    #5 0x55e1adb69344 in _start (/tmp/milvus-sec-validate/sparse_canary_asan+0x2344) (BuildId: b8b1c7e7ffd15f7015a673338995bd931f8c698c)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow ../../../../src/libsanitizer/sanitizer_common/sanitizer_common_interceptors_memintrinsics.inc:115 in memcpy
+Shadow bytes around the buggy address:
+  0x505ffffffd80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x505ffffffe00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x505ffffffe80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x505fffffff00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x505fffffff80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x506000000000: fa fa fa fa 00 00 00 00 00 00 00 00[fa]fa fa fa
+  0x506000000080: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x506000000100: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x506000000180: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x506000000200: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x506000000280: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==41003==ABORTING
