@@ -72,9 +72,9 @@ curl -s -X POST "http://HOST:19530/v2/vectordb/collections/create" \
     "indexParams": [
       {
         "fieldName": "vector",
-        "metricType": "IP",
         "indexName": "vector",
-        "params": { "index_type": "SPARSE_INVERTED_INDEX" }
+        "metricType": "IP",
+        "indexType": "SPARSE_INVERTED_INDEX"
       }
     ]
   }' | jq
