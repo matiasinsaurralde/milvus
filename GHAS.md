@@ -262,19 +262,43 @@ Standalone ASAN canary of the same memcpy/alloc pattern (no Milvus link): `docs/
 |---------|--------|
 | Remote DoS (process crash) | **Confirmed** on live standalone |
 | Heap corruption (attacker-influenced bytes) | **Confirmed** |
+| Cross-request / cross-thread corruption | **Confirmed** (primary buffer freed on unwind; spilled bytes land in a **neighbor** live object — matches assert-then-`SIGSEGV` ordering) |
 | Confidentiality (memory disclosure) | Not demonstrated |
 | Integrity of stored data | Not the primary effect; crash/corruption of process memory |
-| Remote code execution / command execution | **Not demonstrated**; overflow ≤7 bytes makes reliable RCE non-trivial |
+| Remote code execution / command execution | **Not demonstrated; not a credible outcome of this flaw in isolation** (see below) |
+
+### RCE assessment (adversarial)
+
+- Write is **≤7 bytes**, forward-only, fixed offset into the next jemalloc same-size-class slot (user data, not allocator metadata).
+- No info-leak / feedback channel from the RPC path → cannot aim a valid code pointer under ASLR/PIE from this bug alone.
+- Observed `SI_ADDR=0x1111…` is consistent with corrupting then dereferencing a neighbor pointer (crash), not with controlled instruction flow.
+- Reliable RIP control would need **additional** undemonstrated primitives (leak + grooming). Treat escalation as speculative.
 
 ### Suggested advisory impact text
 
-> A remote attacker who can issue a gRPC Search against a collection with a SparseFloatVector field can trigger a heap buffer overflow in sparse placeholder parsing due to copying request bytes before validating that the length is a multiple of the sparse element size. This corrupts process memory and can crash the Milvus process (denial of service). Exploitation for arbitrary code execution has not been demonstrated.
+> A remote attacker able to issue a gRPC `Search` against a collection with a `SparseFloatVector` field can trigger a heap buffer overflow in sparse placeholder parsing: request bytes are copied into a `floor(len/8)*8`-byte heap allocation *before* the length is validated as a multiple of the sparse element size (8), spilling the trailing 1–7 attacker-controlled bytes past the allocation. The reliably reproducible impact is memory corruption that crashes the Milvus process (denial of service). Because the overflow bytes land in a neighbouring live heap object, corruption can persist beyond the failed request and fault unrelated in-flight operations. Arbitrary code execution has not been demonstrated and is not considered a credible outcome of this flaw in isolation: the write is bounded to ≤7 bytes at a fixed forward offset; jemalloc keeps allocator metadata out-of-band so the overflow corrupts adjacent user data rather than allocator control structures; and the vulnerability affords no information leak with which to defeat ASLR.
+
+---
+
+## Related call sites (same helper / same math)
+
+The overflow in `CopyAndWrapSparseRow` does **not** depend on `validate=true` — `FastMemcpy` always runs first. Other call sites are the same bug class with different reachability:
+
+| Site | `validate` | Network-reachable today? |
+|------|------------|---------------------------|
+| `query/Plan.cpp` Search placeholders | `true` | **Yes** (this advisory) |
+| `FieldData.cpp` sparse `FillFieldData` | `false` (silent) | Indirect (binlog/arrow); insert path usually Go-validated first |
+| `ConcurrentVector.cpp` / `FieldIndexing.cpp` growing insert | `false` | Mitigated if proxy `ValidateSparseFloatRows` ran |
+| `ChunkedSegmentSealedImpl.cpp` query materialization | `true` | Indirect (stored arrow data) |
+| `null_offset_` loads in RTree / Tantivy / TextMatch indexes | n/a (same floor-then-memcpy math) | Index files in object storage (tamper / supply-chain bar) |
+
+**Fix once at `CopyAndWrapSparseRow` (check before alloc/copy, unconditional)** closes the sparse sites. Index `null_offset_` copies need their own modulo checks (Marisa already does validate-before-copy correctly).
 
 ---
 
 ## Remediation
 
-**Primary fix (C++):** In `CopyAndWrapSparseRow`, reject `size % element_size() != 0` (and other invariants) **before** allocating / calling `FastMemcpy`.
+**Primary fix (C++):** In `CopyAndWrapSparseRow`, reject `size % element_size() != 0` (and other invariants) **before** allocating / calling `FastMemcpy`. Prefer making that check **unconditional** (not only when `validate==true`).
 
 **Defense in depth (Go proxy):** Call `typeutil.ValidateSparseFloatRows` on search `PlaceholderGroup` sparse values in the proxy (same checks as insert), so malformed lengths never reach segcore.
 
