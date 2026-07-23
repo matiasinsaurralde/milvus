@@ -268,6 +268,36 @@ func TestConvertPlaceholderGroupPassThrough(t *testing.T) {
 	assert.Equal(t, phgBytes, result)
 }
 
+// TestConvertPlaceholderGroupSparseInvalidLengthPassThrough documents that the
+// proxy does NOT call ValidateSparseFloatRows on search placeholders when the
+// placeholder type already matches SparseFloatVector. A row whose length is not
+// a multiple of 8 is passed through unchanged to segcore, where
+// CopyAndWrapSparseRow memcpys before validating (heap overflow of size%8 bytes).
+// See docs/security/validation/sparse_search_heap_overflow.md.
+func TestConvertPlaceholderGroupSparseInvalidLengthPassThrough(t *testing.T) {
+	invalidRow := make([]byte, 71) // 8*8+7 — rejected by ValidateSparseFloatRows
+	assert.Error(t, typeutil.ValidateSparseFloatRows(invalidRow))
+
+	phg := &commonpb.PlaceholderGroup{
+		Placeholders: []*commonpb.PlaceholderValue{{
+			Tag:    "$0",
+			Type:   commonpb.PlaceholderType_SparseFloatVector,
+			Values: [][]byte{invalidRow},
+		}},
+	}
+	phgBytes, err := proto.Marshal(phg)
+	assert.NoError(t, err)
+
+	fieldSchema := &schemapb.FieldSchema{
+		DataType: schemapb.DataType_SparseFloatVector,
+	}
+
+	result, phType, err := ConvertPlaceholderGroup(phgBytes, fieldSchema)
+	assert.NoError(t, err, "proxy must not reject invalid sparse length on search path today")
+	assert.Equal(t, commonpb.PlaceholderType_SparseFloatVector, phType)
+	assert.Equal(t, phgBytes, result, "invalid sparse placeholder is passed through unchanged")
+}
+
 func TestConvertPlaceholderGroupNoConversionNeeded(t *testing.T) {
 	vectors := [][]float32{{0.1, 0.2, 0.3, 0.4}}
 	phgBytes := createFloat32PlaceholderGroup(vectors)

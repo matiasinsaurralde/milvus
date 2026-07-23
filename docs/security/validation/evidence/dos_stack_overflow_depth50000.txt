@@ -1,0 +1,384 @@
+=== RUN   TestSecurityProbeDeepParensExt
+EXT Probe depth=50000 len=100005
+runtime: goroutine stack exceeds 1000000000-byte limit
+runtime: sp=0x2eb2fdc7a378 stack=[0x2eb2fdc7a000, 0x2eb31dc7a000]
+fatal error: stack overflow
+
+runtime stack:
+runtime.throw({0x2124c18?, 0x7f4aeae1cde0?})
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/panic.go:1229 +0x48 fp=0x7f4aeae1cd10 sp=0x7f4aeae1cce0 pc=0x49af28
+runtime.newstack()
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/stack.go:1178 +0x5db fp=0x7f4aeae1ce38 sp=0x7f4aeae1cd10 pc=0x47d8fb
+runtime.morestack()
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/asm_amd64.s:681 +0x7d fp=0x7f4aeae1ce40 sp=0x7f4aeae1ce38 pc=0x4a0ebd
+
+goroutine 140 gp=0x2eb2dda04f00 m=5 mp=0x2eb2dd600008 [running]:
+runtime.getMCache(0x2eb2dd600008?)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mcache.go:139 +0x3f fp=0x2eb2fdc7a388 sp=0x2eb2fdc7a380 pc=0x42fa1f
+runtime.mallocgcSmallScanNoHeader(0x78, 0x1f2d6c0)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/malloc.go:1523 +0x39 fp=0x2eb2fdc7a3e8 sp=0x2eb2fdc7a388 pc=0x42c099
+runtime.mallocgc(0x78, 0x1f2d6c0, 0x1)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/malloc.go:1150 +0xf3 fp=0x2eb2fdc7a418 sp=0x2eb2fdc7a3e8 pc=0x498a53
+runtime.newobject(0x0?)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/malloc.go:2157 +0x25 fp=0x2eb2fdc7a440 sp=0x2eb2fdc7a418 pc=0x42ca65
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.NewExprContext({0x223faf0, 0x2eb2dd602140}, {0x7f4ae9da7d68, 0x2eb2dedd9600}, 0x25)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:342 +0x45 fp=0x2eb2fdc7a488 sp=0x2eb2fdc7a440 pc=0x1379745
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:3648 +0xd8 fp=0x2eb2fdc7db50 sp=0x2eb2fdc7a488 pc=0x1392bb8
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdc81218 sp=0x2eb2fdc7db50 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdc848e0 sp=0x2eb2fdc81218 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdc87fa8 sp=0x2eb2fdc848e0 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdc8b670 sp=0x2eb2fdc87fa8 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdc8ed38 sp=0x2eb2fdc8b670 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdc92400 sp=0x2eb2fdc8ed38 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdc95ac8 sp=0x2eb2fdc92400 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdc99190 sp=0x2eb2fdc95ac8 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdc9c858 sp=0x2eb2fdc99190 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdc9ff20 sp=0x2eb2fdc9c858 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdca35e8 sp=0x2eb2fdc9ff20 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdca6cb0 sp=0x2eb2fdca35e8 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdcaa378 sp=0x2eb2fdca6cb0 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdcada40 sp=0x2eb2fdcaa378 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdcb1108 sp=0x2eb2fdcada40 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdcb47d0 sp=0x2eb2fdcb1108 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdcb7e98 sp=0x2eb2fdcb47d0 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdcbb560 sp=0x2eb2fdcb7e98 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdcbec28 sp=0x2eb2fdcbb560 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdcc22f0 sp=0x2eb2fdcbec28 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdcc59b8 sp=0x2eb2fdcc22f0 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdcc9080 sp=0x2eb2fdcc59b8 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdccc748 sp=0x2eb2fdcc9080 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdccfe10 sp=0x2eb2fdccc748 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdcd34d8 sp=0x2eb2fdccfe10 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdcd6ba0 sp=0x2eb2fdcd34d8 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdcda268 sp=0x2eb2fdcd6ba0 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdcdd930 sp=0x2eb2fdcda268 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdce0ff8 sp=0x2eb2fdcdd930 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdce46c0 sp=0x2eb2fdce0ff8 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdce7d88 sp=0x2eb2fdce46c0 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdceb450 sp=0x2eb2fdce7d88 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdceeb18 sp=0x2eb2fdceb450 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdcf21e0 sp=0x2eb2fdceeb18 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdcf58a8 sp=0x2eb2fdcf21e0 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdcf8f70 sp=0x2eb2fdcf58a8 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdcfc638 sp=0x2eb2fdcf8f70 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdcffd00 sp=0x2eb2fdcfc638 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdd033c8 sp=0x2eb2fdcffd00 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdd06a90 sp=0x2eb2fdd033c8 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdd0a158 sp=0x2eb2fdd06a90 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdd0d820 sp=0x2eb2fdd0a158 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdd10ee8 sp=0x2eb2fdd0d820 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb2fdd145b0 sp=0x2eb2fdd10ee8 pc=0x1395b4d
+...38197 frames elided...
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dbf3be0 sp=0x2eb31dbf0518 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dbf72a8 sp=0x2eb31dbf3be0 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dbfa970 sp=0x2eb31dbf72a8 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dbfe038 sp=0x2eb31dbfa970 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc01700 sp=0x2eb31dbfe038 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc04dc8 sp=0x2eb31dc01700 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc08490 sp=0x2eb31dc04dc8 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc0bb58 sp=0x2eb31dc08490 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc0f220 sp=0x2eb31dc0bb58 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc128e8 sp=0x2eb31dc0f220 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc15fb0 sp=0x2eb31dc128e8 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc19678 sp=0x2eb31dc15fb0 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc1cd40 sp=0x2eb31dc19678 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc20408 sp=0x2eb31dc1cd40 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc23ad0 sp=0x2eb31dc20408 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc27198 sp=0x2eb31dc23ad0 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc2a860 sp=0x2eb31dc27198 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc2df28 sp=0x2eb31dc2a860 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc315f0 sp=0x2eb31dc2df28 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc34cb8 sp=0x2eb31dc315f0 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc38380 sp=0x2eb31dc34cb8 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc3ba48 sp=0x2eb31dc38380 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc3f110 sp=0x2eb31dc3ba48 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc427d8 sp=0x2eb31dc3f110 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc45ea0 sp=0x2eb31dc427d8 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc49568 sp=0x2eb31dc45ea0 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc4cc30 sp=0x2eb31dc49568 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc502f8 sp=0x2eb31dc4cc30 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc539c0 sp=0x2eb31dc502f8 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc57088 sp=0x2eb31dc539c0 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc5a750 sp=0x2eb31dc57088 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc5de18 sp=0x2eb31dc5a750 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc614e0 sp=0x2eb31dc5de18 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc64ba8 sp=0x2eb31dc614e0 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc68270 sp=0x2eb31dc64ba8 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc6b938 sp=0x2eb31dc68270 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc6f000 sp=0x2eb31dc6b938 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc726c8 sp=0x2eb31dc6f000 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc75d90 sp=0x2eb31dc726c8 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).expr(0x2eb2dd602140, 0x0)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:4034 +0x306d fp=0x2eb31dc79458 sp=0x2eb31dc75d90 pc=0x1395b4d
+github.com/milvus-io/milvus/internal/parser/planparserv2/generated.(*PlanParser).Expr(0x2eb2dd602140)
+	/workspace/internal/parser/planparserv2/generated/plan_parser.go:3641 +0x25 fp=0x2eb31dc79498 sp=0x2eb31dc79458 pc=0x1392aa5
+github.com/milvus-io/milvus/internal/parser/planparserv2.parseExpr(0x2eb2dd602140, 0x2eb2dd93c3a8)
+	/workspace/internal/parser/planparserv2/plan_parser_v2.go:82 +0x15e fp=0x2eb31dc795a8 sp=0x2eb31dc79498 pc=0x1b3929e
+github.com/milvus-io/milvus/internal/parser/planparserv2.handleInternal({0x2eb2ddc00000, 0x186a5})
+	/workspace/internal/parser/planparserv2/plan_parser_v2.go:137 +0x645 fp=0x2eb31dc798f0 sp=0x2eb31dc795a8 pc=0x1b39b05
+github.com/milvus-io/milvus/internal/parser/planparserv2.handleExprInternal(0x2eb2ddbb5e00, {0x2eb2ddc00000, 0x186a5}, 0x2eb2ddbc31a0)
+	/workspace/internal/parser/planparserv2/plan_parser_v2.go:166 +0x130 fp=0x2eb31dc79a20 sp=0x2eb31dc798f0 pc=0x1b3a130
+github.com/milvus-io/milvus/internal/parser/planparserv2.parseExprInner(0x2eb2ddbb5e00, {0x2eb2ddc00000, 0x186a5}, 0x0, 0x2eb2ddbc31a0)
+	/workspace/internal/parser/planparserv2/plan_parser_v2.go:180 +0x79 fp=0x2eb31dc79be8 sp=0x2eb31dc79a20 pc=0x1b3a5b9
+github.com/milvus-io/milvus/internal/parser/planparserv2.ParseExpr(0x2eb2ddbb5e00, {0x2eb2ddc00000, 0x186a5}, 0x0)
+	/workspace/internal/parser/planparserv2/plan_parser_v2.go:218 +0xb4 fp=0x2eb31dc79c70 sp=0x2eb31dc79be8 pc=0x1b3acf4
+github.com/milvus-io/milvus/internal/parser/planparserv2_test.TestSecurityProbeDeepParensExt(0x2eb2dd7f0908)
+	/workspace/internal/parser/planparserv2/security_probe_ext_test.go:36 +0x7f1 fp=0x2eb31dc79ec8 sp=0x2eb31dc79c70 pc=0x1bc9031
+testing.tRunner(0x2eb2dd7f0908, 0x21c8bb0)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/testing/testing.go:2036 +0x18e fp=0x2eb31dc79fb0 sp=0x2eb31dc79ec8 pc=0x602c0e
+testing.(*T).Run.gowrap1()
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/testing/testing.go:2101 +0x2a fp=0x2eb31dc79fe0 sp=0x2eb31dc79fb0 pc=0x604a8a
+runtime.goexit({})
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/asm_amd64.s:1771 +0x1 fp=0x2eb31dc79fe8 sp=0x2eb31dc79fe0 pc=0x4a2981
+created by testing.(*T).Run in goroutine 1
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/testing/testing.go:2101 +0x9b4
+
+goroutine 1 gp=0x2eb2dd5221e0 m=nil [chan receive]:
+runtime.gopark(0x21c8fa8, 0x2eb2ddb942e8, 0x13, 0x7, 0x2)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:462 +0xf1 fp=0x2eb2ddf29370 sp=0x2eb2ddf29340 pc=0x49b071
+runtime.chanrecv(0x2eb2ddb94280, 0x2eb2ddb8f45e, 0x1)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/chan.go:667 +0x36b fp=0x2eb2ddf293f0 sp=0x2eb2ddf29370 pc=0x422a6b
+runtime.chanrecv1(0x308ca80?, 0x1db7980?)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/chan.go:509 +0x12 fp=0x2eb2ddf29418 sp=0x2eb2ddf293f0 pc=0x4226d2
+testing.(*T).Run(0x2eb2dd7f0908, {0x214ce20, 0x1e}, 0x21c8bb0)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/testing/testing.go:2109 +0x9dc fp=0x2eb2ddf29690 sp=0x2eb2ddf29418 pc=0x60483c
+testing.runTests.func1(0x2eb2dd7f06c8)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/testing/testing.go:2585 +0xa5 fp=0x2eb2ddf29728 sp=0x2eb2ddf29690 pc=0x6085c5
+testing.tRunner(0x2eb2dd7f06c8, 0x2eb2ddb8f8f0)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/testing/testing.go:2036 +0x18e fp=0x2eb2ddf29810 sp=0x2eb2ddf29728 pc=0x602c0e
+testing.runTests({0x214496f, 0x1b}, {0x2187609, 0x38}, 0x2eb2ddbbaa50, {0x304bbe0, 0x97, 0x97}, {0xc28fdfd40d09732d, 0xdf9625989, ...})
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/testing/testing.go:2583 +0x677 fp=0x2eb2ddf29998 sp=0x2eb2ddf29810 pc=0x6083f7
+testing.(*M).Run(0x2eb2ddbac640)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/testing/testing.go:2443 +0xbb9 fp=0x2eb2ddf29ee0 sp=0x2eb2ddf29998 pc=0x605d59
+main.main()
+	_testmain.go:402 +0xa5 fp=0x2eb2ddf29f70 sp=0x2eb2ddf29ee0 pc=0x1bc9be5
+runtime.main()
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:290 +0x267 fp=0x2eb2ddf29fe0 sp=0x2eb2ddf29f70 pc=0x462567
+runtime.goexit({})
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/asm_amd64.s:1771 +0x1 fp=0x2eb2ddf29fe8 sp=0x2eb2ddf29fe0 pc=0x4a2981
+
+goroutine 2 gp=0x2eb2dd522d20 m=nil [force gc (idle)]:
+runtime.gopark(0x21c9328, 0x3088f60, 0xb, 0xa, 0x1)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:462 +0xf1 fp=0x2eb2dd5a4f80 sp=0x2eb2dd5a4f50 pc=0x49b071
+runtime.goparkunlock(0x3088f60?, 0x0?, 0x0?, 0x0?)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:468 +0x25 fp=0x2eb2dd5a4fb0 sp=0x2eb2dd5a4f80 pc=0x4629c5
+runtime.forcegchelper()
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:375 +0xb5 fp=0x2eb2dd5a4fe0 sp=0x2eb2dd5a4fb0 pc=0x4628b5
+runtime.goexit({})
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/asm_amd64.s:1771 +0x1 fp=0x2eb2dd5a4fe8 sp=0x2eb2dd5a4fe0 pc=0x4a2981
+created by runtime.init.7 in goroutine 1
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:363 +0x1a
+
+goroutine 3 gp=0x2eb2dd5232c0 m=nil [GC sweep wait]:
+runtime.gopark(0x21c9328, 0x308b280, 0x8, 0x9, 0x1)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:462 +0xf1 fp=0x2eb2dd5a5760 sp=0x2eb2dd5a5730 pc=0x49b071
+runtime.goparkunlock(0x308b280?, 0x0?, 0x0?, 0x0?)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:468 +0x25 fp=0x2eb2dd5a5790 sp=0x2eb2dd5a5760 pc=0x4629c5
+runtime.bgsweep(0x2eb2dd5cc000)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mgcsweep.go:324 +0x150 fp=0x2eb2dd5a57c8 sp=0x2eb2dd5a5790 pc=0x447470
+runtime.gcenable.gowrap1()
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mgc.go:214 +0x17 fp=0x2eb2dd5a57e0 sp=0x2eb2dd5a57c8 pc=0x4373b7
+runtime.goexit({})
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/asm_amd64.s:1771 +0x1 fp=0x2eb2dd5a57e8 sp=0x2eb2dd5a57e0 pc=0x4a2981
+created by runtime.gcenable in goroutine 1
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mgc.go:214 +0x66
+
+goroutine 4 gp=0x2eb2dd5234a0 m=nil [sleep]:
+runtime.gopark(0x21c9328, 0x30acd60, 0xe, 0xe, 0x2)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:462 +0xf1 fp=0x2eb2dd5b9f18 sp=0x2eb2dd5b9ee8 pc=0x49b071
+runtime.goparkunlock(0x30acd60?, 0x0?, 0x0?, 0x1ac26?)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:468 +0x25 fp=0x2eb2dd5b9f48 sp=0x2eb2dd5b9f18 pc=0x4629c5
+runtime.(*scavengerState).sleep(0x30acd60, 0x41303a3a00000000)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mgcscavenge.go:504 +0xd0 fp=0x2eb2dd5b9fa0 sp=0x2eb2dd5b9f48 pc=0x444af0
+runtime.bgscavenge(0x2eb2dd5cc000)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mgcscavenge.go:662 +0x8e fp=0x2eb2dd5b9fc8 sp=0x2eb2dd5b9fa0 pc=0x444eae
+runtime.gcenable.gowrap2()
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mgc.go:215 +0x17 fp=0x2eb2dd5b9fe0 sp=0x2eb2dd5b9fc8 pc=0x437377
+runtime.goexit({})
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/asm_amd64.s:1771 +0x1 fp=0x2eb2dd5b9fe8 sp=0x2eb2dd5b9fe0 pc=0x4a2981
+created by runtime.gcenable in goroutine 1
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mgc.go:215 +0xa5
+
+goroutine 5 gp=0x2eb2dd523a40 m=nil [GOMAXPROCS updater (idle)]:
+runtime.gopark(0x21c9328, 0x3088ec0, 0xc, 0xa, 0x1)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:462 +0xf1 fp=0x2eb2dd5a6758 sp=0x2eb2dd5a6728 pc=0x49b071
+runtime.goparkunlock(0x3088ec0?, 0x0?, 0x0?, 0x0?)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:468 +0x25 fp=0x2eb2dd5a6788 sp=0x2eb2dd5a6758 pc=0x4629c5
+runtime.updateMaxProcsGoroutine()
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:7095 +0xea fp=0x2eb2dd5a67e0 sp=0x2eb2dd5a6788 pc=0x46fcaa
+runtime.goexit({})
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/asm_amd64.s:1771 +0x1 fp=0x2eb2dd5a67e8 sp=0x2eb2dd5a67e0 pc=0x4a2981
+created by runtime.defaultGOMAXPROCSUpdateEnable in goroutine 1
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:7083 +0x37
+
+goroutine 6 gp=0x2eb2dd5e41e0 m=nil [finalizer wait]:
+runtime.gopark(0x21c9000, 0x310dd38, 0xa, 0xa, 0x1)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:462 +0xf1 fp=0x2eb2dd5a4630 sp=0x2eb2dd5a4600 pc=0x49b071
+runtime.runFinalizers()
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mfinal.go:210 +0xfe fp=0x2eb2dd5a47e0 sp=0x2eb2dd5a4630 pc=0x43625e
+runtime.goexit({})
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/asm_amd64.s:1771 +0x1 fp=0x2eb2dd5a47e8 sp=0x2eb2dd5a47e0 pc=0x4a2981
+created by runtime.createfing in goroutine 1
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mfinal.go:172 +0x45
+
+goroutine 7 gp=0x2eb2dd95f2c0 m=nil [GC worker (idle)]:
+runtime.gopark(0x21c9020, 0x2eb2dd612000, 0x1c, 0xa, 0x0)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:462 +0xf1 fp=0x2eb2dd5a6f38 sp=0x2eb2dd5a6f08 pc=0x49b071
+runtime.gcBgMarkWorker(0x2eb2dd5d8770)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mgc.go:1791 +0xf9 fp=0x2eb2dd5a6fc8 sp=0x2eb2dd5a6f38 pc=0x4399f9
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mgc.go:1695 +0x17 fp=0x2eb2dd5a6fe0 sp=0x2eb2dd5a6fc8 pc=0x4398b7
+runtime.goexit({})
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/asm_amd64.s:1771 +0x1 fp=0x2eb2dd5a6fe8 sp=0x2eb2dd5a6fe0 pc=0x4a2981
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mgc.go:1695 +0x65
+
+goroutine 18 gp=0x2eb2dd6043c0 m=nil [GC worker (idle)]:
+runtime.gopark(0x21c9020, 0x2eb2dd9cc000, 0x1c, 0xa, 0x0)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:462 +0xf1 fp=0x2eb2dd5a0738 sp=0x2eb2dd5a0708 pc=0x49b071
+runtime.gcBgMarkWorker(0x2eb2dd5d8770)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mgc.go:1791 +0xf9 fp=0x2eb2dd5a07c8 sp=0x2eb2dd5a0738 pc=0x4399f9
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mgc.go:1695 +0x17 fp=0x2eb2dd5a07e0 sp=0x2eb2dd5a07c8 pc=0x4398b7
+runtime.goexit({})
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/asm_amd64.s:1771 +0x1 fp=0x2eb2dd5a07e8 sp=0x2eb2dd5a07e0 pc=0x4a2981
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mgc.go:1695 +0x65
+
+goroutine 34 gp=0x2eb2dd9be3c0 m=nil [GC worker (idle)]:
+runtime.gopark(0x21c9020, 0x2eb2dda00000, 0x1c, 0xa, 0x0)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:462 +0xf1 fp=0x2eb2dd9d4738 sp=0x2eb2dd9d4708 pc=0x49b071
+runtime.gcBgMarkWorker(0x2eb2dd5d8770)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mgc.go:1791 +0xf9 fp=0x2eb2dd9d47c8 sp=0x2eb2dd9d4738 pc=0x4399f9
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mgc.go:1695 +0x17 fp=0x2eb2dd9d47e0 sp=0x2eb2dd9d47c8 pc=0x4398b7
+runtime.goexit({})
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/asm_amd64.s:1771 +0x1 fp=0x2eb2dd9d47e8 sp=0x2eb2dd9d47e0 pc=0x4a2981
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mgc.go:1695 +0x65
+
+goroutine 50 gp=0x2eb2dda04000 m=nil [GC worker (idle)]:
+runtime.gopark(0x21c9020, 0x2eb2dd612200, 0x1c, 0xa, 0x0)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:462 +0xf1 fp=0x2eb2dd9d0738 sp=0x2eb2dd9d0708 pc=0x49b071
+runtime.gcBgMarkWorker(0x2eb2dd5d8770)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mgc.go:1791 +0xf9 fp=0x2eb2dd9d07c8 sp=0x2eb2dd9d0738 pc=0x4399f9
+runtime.gcBgMarkStartWorkers.gowrap1()
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mgc.go:1695 +0x17 fp=0x2eb2dd9d07e0 sp=0x2eb2dd9d07c8 pc=0x4398b7
+runtime.goexit({})
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/asm_amd64.s:1771 +0x1 fp=0x2eb2dd9d07e8 sp=0x2eb2dd9d07e0 pc=0x4a2981
+created by runtime.gcBgMarkStartWorkers in goroutine 1
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mgc.go:1695 +0x65
+
+goroutine 19 gp=0x2eb2dd6045a0 m=nil [cleanup wait]:
+runtime.gopark(0x21c9328, 0x30ad840, 0x2e, 0xa, 0x1)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:462 +0xf1 fp=0x2eb2dd5a1748 sp=0x2eb2dd5a1718 pc=0x49b071
+runtime.goparkunlock(0x30ad848?, 0x0?, 0x0?, 0x0?)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:468 +0x25 fp=0x2eb2dd5a1778 sp=0x2eb2dd5a1748 pc=0x4629c5
+runtime.(*cleanupQueue).dequeue(0x30ad780)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mcleanup.go:522 +0xbe fp=0x2eb2dd5a17b0 sp=0x2eb2dd5a1778 pc=0x43207e
+runtime.runCleanups()
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mcleanup.go:718 +0x5b fp=0x2eb2dd5a17e0 sp=0x2eb2dd5a17b0 pc=0x43287b
+runtime.goexit({})
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/asm_amd64.s:1771 +0x1 fp=0x2eb2dd5a17e8 sp=0x2eb2dd5a17e0 pc=0x4a2981
+created by runtime.(*cleanupQueue).createGs in goroutine 1
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/mcleanup.go:672 +0xae
+
+goroutine 139 gp=0x2eb2dda04d20 m=nil [select]:
+runtime.gopark(0x21c9390, 0x0, 0x12, 0x3, 0x1)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/proc.go:462 +0xf1 fp=0x2eb2dd5b5d48 sp=0x2eb2dd5b5d18 pc=0x49b071
+runtime.selectgo(0x2eb2dd5b5f38, 0x2eb2dd5b5ee0, 0x42a045?, 0x0, 0x2eb2dd9d3f08?, 0x1)
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/select.go:351 +0xd45 fp=0x2eb2dd5b5ea8 sp=0x2eb2dd5b5d48 pc=0x4763e5
+github.com/hashicorp/golang-lru/v2/expirable.NewLRU[...].func1()
+	/home/ubuntu/go/pkg/mod/github.com/hashicorp/golang-lru/v2@v2.0.7/expirable/expirable_lru.go:86 +0x171 fp=0x2eb2dd5b5fb8 sp=0x2eb2dd5b5ea8 pc=0x1bb51f1
+github.com/hashicorp/golang-lru/v2/expirable.NewLRU[...].gowrap1()
+	/home/ubuntu/go/pkg/mod/github.com/hashicorp/golang-lru/v2@v2.0.7/expirable/expirable_lru.go:93 +0x2a fp=0x2eb2dd5b5fe0 sp=0x2eb2dd5b5fb8 pc=0x1bb506a
+runtime.goexit({})
+	/home/ubuntu/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.26.5.linux-amd64/src/runtime/asm_amd64.s:1771 +0x1 fp=0x2eb2dd5b5fe8 sp=0x2eb2dd5b5fe0 pc=0x4a2981
+created by github.com/hashicorp/golang-lru/v2/expirable.NewLRU[...] in goroutine 1
+	/home/ubuntu/go/pkg/mod/github.com/hashicorp/golang-lru/v2@v2.0.7/expirable/expirable_lru.go:82 +0x45f
+FAIL	github.com/milvus-io/milvus/internal/parser/planparserv2	0.809s
+FAIL

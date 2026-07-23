@@ -1,0 +1,29 @@
+=== RUN   TestSecurityProbeDeepParensExt
+EXT Probe depth=5000 len=10005
+[2026/07/21 05:45:58.148 +00:00] [DEBUG] [config/refresher.go:69] ["start refreshing configurations"] [source=FileSource]
+[2026/07/21 05:45:58.149 +00:00] [DEBUG] [config/etcd_source.go:52] ["init etcd source"] [etcdInfo="{\"UseEmbed\":false,\"EnableAuth\":true,\"UserName\":\"etcdadmin\",\"PassWord\":\"etcdadmin\",\"UseSSL\":false,\"Endpoints\":[\"localhost:2379\"],\"KeyPrefix\":\"by-dev\",\"CertFile\":\"/path/to/etcd-client.pem\",\"KeyFile\":\"/path/to/etcd-client-key.pem\",\"CaCertFile\":\"/path/to/ca.pem\",\"MinVersion\":\"1.3\",\"DialTimeout\":5000000000,\"RefreshInterval\":5000000000}"]
+[2026/07/21 05:45:58.149 +00:00] [INFO] [etcd/etcd_util.go:227] ["create etcd client(enable auth)"] [useSSL=false] [endpoints="[localhost:2379]"] [minVersion=1.3]
+[2026/07/21 05:46:03.150 +00:00] [INFO] [paramtable/base_table.go:223] ["init with etcd failed"] [error="context deadline exceeded"]
+[2026/07/21 05:46:03.155 +00:00] [INFO] [paramtable/component_param.go:7136] ["DeployModeEnv is not set, use default"] [default=0.5]
+[2026/07/21 05:46:03.156 +00:00] [DEBUG] [funcutil/func.go:184] ["Selected IP by priority"] [ip=172.30.0.2] [categoryName=IPv4Private]
+[2026/07/21 05:46:03.156 +00:00] [DEBUG] [funcutil/func.go:184] ["Selected IP by priority"] [ip=172.30.0.2] [categoryName=IPv4Private]
+[2026/07/21 05:46:03.156 +00:00] [DEBUG] [funcutil/func.go:184] ["Selected IP by priority"] [ip=172.30.0.2] [categoryName=IPv4Private]
+[2026/07/21 05:46:03.156 +00:00] [DEBUG] [funcutil/func.go:184] ["Selected IP by priority"] [ip=172.30.0.2] [categoryName=IPv4Private]
+[2026/07/21 05:46:03.156 +00:00] [DEBUG] [funcutil/func.go:184] ["Selected IP by priority"] [ip=172.30.0.2] [categoryName=IPv4Private]
+[2026/07/21 05:46:03.157 +00:00] [DEBUG] [funcutil/func.go:184] ["Selected IP by priority"] [ip=172.30.0.2] [categoryName=IPv4Private]
+[2026/07/21 05:46:03.157 +00:00] [DEBUG] [funcutil/func.go:184] ["Selected IP by priority"] [ip=172.30.0.2] [categoryName=IPv4Private]
+[2026/07/21 05:46:03.157 +00:00] [DEBUG] [funcutil/func.go:184] ["Selected IP by priority"] [ip=172.30.0.2] [categoryName=IPv4Private]
+[2026/07/21 05:46:03.157 +00:00] [DEBUG] [funcutil/func.go:184] ["Selected IP by priority"] [ip=172.30.0.2] [categoryName=IPv4Private]
+[2026/07/21 05:46:03.157 +00:00] [DEBUG] [funcutil/func.go:184] ["Selected IP by priority"] [ip=172.30.0.2] [categoryName=IPv4Private]
+[2026/07/21 05:46:03.157 +00:00] [DEBUG] [funcutil/func.go:184] ["Selected IP by priority"] [ip=172.30.0.2] [categoryName=IPv4Private]
+[2026/07/21 05:46:03.157 +00:00] [DEBUG] [funcutil/func.go:184] ["Selected IP by priority"] [ip=172.30.0.2] [categoryName=IPv4Private]
+[2026/07/21 05:46:03.157 +00:00] [DEBUG] [funcutil/func.go:184] ["Selected IP by priority"] [ip=172.30.0.2] [categoryName=IPv4Private]
+[2026/07/21 05:46:03.157 +00:00] [DEBUG] [funcutil/func.go:184] ["Selected IP by priority"] [ip=172.30.0.2] [categoryName=IPv4Private]
+[2026/07/21 05:46:03.157 +00:00] [DEBUG] [funcutil/func.go:184] ["Selected IP by priority"] [ip=172.30.0.2] [categoryName=IPv4Private]
+[2026/07/21 05:46:03.157 +00:00] [INFO] [paramtable/hook_config.go:21] ["hook config"] [hook={}]
+[2026/07/21 05:46:03.157 +00:00] [INFO] [paramtable/cipher_config.go:26] ["init cipher config"]
+[2026/07/21 05:46:03.157 +00:00] [DEBUG] [config/refresher.go:69] ["start refreshing configurations"] [source=FileSource]
+EXT returned err=<nil>
+--- PASS: TestSecurityProbeDeepParensExt (5.13s)
+PASS
+ok  	github.com/milvus-io/milvus/internal/parser/planparserv2	5.161s
