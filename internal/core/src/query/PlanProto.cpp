@@ -1275,7 +1275,27 @@ ProtoParser::ParseJsonContainsExprs(
 
 expr::TypedExprPtr
 ProtoParser::ParseColumnExprs(const proto::plan::ColumnExpr& expr_pb) {
-    return std::make_shared<expr::ColumnExpr>(expr_pb.info());
+    // Validate the proto-declared column type against the real schema type,
+    // exactly as every other column-bearing parser above does. A ColumnExpr is
+    // reachable as a CallExpr function argument, which is parsed with
+    // TypeIsAny, so without this check a crafted plan could declare a
+    // mismatched view over a field (e.g. VARCHAR over a numeric column). The
+    // evaluator dispatches on the declared type and would reinterpret the
+    // underlying buffer as that type -- a type confusion / wild dereference.
+    auto& column_info = expr_pb.info();
+    auto field_id = FieldId(column_info.field_id());
+    auto& field = schema->operator[](field_id);
+    auto data_type = field.get_data_type();
+
+    if (column_info.is_element_level()) {
+        Assert(data_type == DataType::ARRAY);
+        Assert(field.get_element_type() ==
+               static_cast<DataType>(column_info.element_type()));
+    } else {
+        Assert(data_type == static_cast<DataType>(column_info.data_type()));
+    }
+
+    return std::make_shared<expr::ColumnExpr>(column_info);
 }
 
 expr::TypedExprPtr
