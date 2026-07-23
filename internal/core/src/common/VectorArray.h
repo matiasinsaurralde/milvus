@@ -55,19 +55,30 @@ class VectorArray : public milvus::VectorTrait {
     // One row of VectorFieldProto
     explicit VectorArray(const VectorFieldProto& vector_field) {
         dim_ = vector_field.dim();
+        // dim_ is the per-row VectorField.Dim taken straight from the insert
+        // proto; it is not validated against the schema dim upstream. Every
+        // branch below divides by it (or a multiple of it), so a zero/negative
+        // value is a division-by-zero DoS. Reject it before any arithmetic.
+        AssertInfo(dim_ > 0,
+                   "invalid vector array dim {} in insert payload",
+                   dim_);
         switch (vector_field.data_case()) {
             case VectorFieldProto::kFloatVector: {
                 element_type_ = DataType::VECTOR_FLOAT;
                 // data size should be array length * dim
                 length_ = vector_field.float_vector().data().size() / dim_;
-                auto data = new float[length_ * dim_];
                 size_ =
                     vector_field.float_vector().data().size() * sizeof(float);
+                // Size the destination to the actual payload, NOT
+                // length_ * dim_. length_ is a floor division, so when the
+                // float count is not a whole multiple of the (untrusted) dim_,
+                // length_ * dim_ is smaller than the copied count and the
+                // memcpy would write past the allocation.
+                data_ = std::make_unique<char[]>(size_);
                 milvus::fastmem::FastMemcpy(
-                    data,
+                    data_.get(),
                     vector_field.float_vector().data().data(),
-                    vector_field.float_vector().data().size() * sizeof(float));
-                data_ = std::unique_ptr<char[]>(reinterpret_cast<char*>(data));
+                    size_);
                 break;
             }
             case VectorFieldProto::kBinaryVector: {
