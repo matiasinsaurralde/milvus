@@ -273,15 +273,24 @@ inline knowhere::sparse::SparseRow<SparseValueType>
 CopyAndWrapSparseRow(const void* data,
                      size_t size,
                      const bool validate = false) {
+    // A sparse row is a sequence of fixed-size (id, value) elements. A byte
+    // length that is not a whole multiple of element_size() is always
+    // malformed: the destination buffer below is sized to hold only
+    // floor(size / element_size()) elements, so copying `size` bytes into it
+    // would overflow it by (size % element_size()) bytes. This check must run
+    // BEFORE the copy and must NOT be gated on `validate` -- the search path
+    // feeds attacker-controlled placeholder bytes here, and deferring the
+    // check (as the previous code did) corrupts the heap before the length is
+    // ever inspected.
+    AssertInfo(
+        size % knowhere::sparse::SparseRow<SparseValueType>::element_size() ==
+            0,
+        "Invalid size for sparse row data");
     size_t num_elements =
         size / knowhere::sparse::SparseRow<SparseValueType>::element_size();
     knowhere::sparse::SparseRow<SparseValueType> row(num_elements);
     milvus::fastmem::FastMemcpy(row.data(), data, size);
     if (validate) {
-        AssertInfo(size % knowhere::sparse::SparseRow<
-                              SparseValueType>::element_size() ==
-                       0,
-                   "Invalid size for sparse row data");
         for (size_t i = 0; i < num_elements; ++i) {
             auto element = row[i];
             AssertInfo(std::isfinite(element.val),
