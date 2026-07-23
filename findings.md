@@ -5,11 +5,14 @@
 **Branch:** `claude/milvus-security-variants-hgddyk`
 **Focus:** RCE and DoS paths (memory-corruption prioritized), with reachability gated on attacker → input → sink and adversarial falsification of each candidate.
 
-> **Verification caveat.** The C++ segcore could **not** be compiled or run in the analysis
-> environment. Every finding below is verified by direct source inspection and control-/data-flow
-> reasoning, and each fix mirrors an existing in-tree pattern. **None of the fixes have been
-> compiled or unit-tested.** The [How to test](#how-to-test-in-your-environment) section gives
-> concrete, per-finding build + repro steps (AddressSanitizer + unit tests + end-to-end).
+> **Verification caveat.** This environment could **not** build or run the C++ segcore, **nor** the
+> cgo-dependent Go packages (`internal/proxy` and friends fail with missing `milvus_core` / `rdkafka` /
+> `rocksdb` / `milvus-storage` pkg-config — confirmed empirically). Every finding below is verified by
+> direct source inspection and control-/data-flow reasoning, and each fix mirrors an existing in-tree
+> pattern. **No fix, and no repro, has been compiled or run here** — including the Go authz test (A1),
+> which needs the compiled core on `PKG_CONFIG_PATH`. The [How to test](#how-to-test-in-your-environment)
+> section and each finding give concrete, runnable build + repro steps (AddressSanitizer / ThreadSanitizer
+> unit tests + end-to-end) for a full build.
 
 ---
 
@@ -26,8 +29,13 @@
 | N1 | `FieldData.cpp` metadata-`dim` vs arrow-width over-read | OOB heap **read** | Internal only (object-store write access) | ⚠️ Documented (defense-in-depth) |
 | N2 | `Span<T>` reinterpret guard is a stripped `assert` | Hardening chokepoint | Internal only | ⚠️ Documented (follow-up hardening) |
 | D4 | `large_topk` removes the nq×topK implicit bound | DoS (resource) | Config + collection-ownership gated | ⚠️ Documented (low) |
+| C1 | Growing-segment reopen data race on non-atomic `schema_` → conditional UAF | Data race / UAF (RCE-relevant) | **External** — `AddCollectionField` + concurrent Search on a growing segment | ⚠️ Documented, not fixed |
+| C2 | StorageV1 index mmap-target path missing generation suffix → SIGBUS / corrupt-index OOB | Data race (crash / memory corruption) | **External-triggered** — index rebuild / load-release cycling | ⚠️ Documented, not fixed |
+| A1 | `RestoreSnapshot` cross-database privilege bypass | Authz bypass (cross-db privilege escalation) | **External** — user with `RestoreSnapshot` on any one db | ⚠️ Documented, not fixed |
 
-Killed / cleared candidates are listed at the [end](#killed--cleared).
+Killed / cleared candidates are listed at the [end](#killed--cleared). The three
+[concurrency/authz threads](#concurrency--authz-findings-threads-1-3) resumed from the prior hunt are
+written up in their own section.
 
 ---
 
@@ -247,6 +255,228 @@ type confusions. **Not applied** because F3's parser-level assert already closes
 and adding an include to this heavily-included core header could not be compile-verified here.
 
 ---
+
+## Concurrency & authz findings (threads #1–#3)
+
+These resume the three residual threads from the prior hunt: #2 segcore reopen staging (prioritized,
+RCE scope), #1 local index-cache TOCTOU, #3 RBAC `DBNameGetter`. Verification note: memory-safety
+concurrency bugs need a running build with sanitizers, which this environment lacks — each item below
+gives a ThreadSanitizer/AddressSanitizer repro plan. **No TSan build option exists today** (only
+`USE_ASAN`, `CMakeLists.txt:230-233`); the plans include the one-block CMake change to add
+`-fsanitize=thread`. ASan catches the *outcome* (heap-use-after-free / SIGBUS) when the interleaving
+hits; TSan catches the *race* regardless of timing.
+
+### C1 — Growing-segment reopen: data race on non-atomic `schema_` → conditional UAF (thread #2, EXTERNAL)
+
+**This is the live result of the reopen audit.** The **sealed** reopen path is sound (see "cleared"
+below); the **growing** path is not.
+
+`SegmentGrowingImpl::Reopen` (`internal/core/src/segcore/SegmentGrowingImpl.cpp:2554-2624`) publishes a
+new schema by overwriting the plain member `SchemaPtr schema_` in place — `schema_ = sch;` at **`:2613`**
+— while holding `std::unique_lock(sch_mutex_)` (`:2556`). But:
+- **`sch_mutex_` is held by exactly two functions in the whole tree** (verified by grep): `Insert`
+  (`:644`, shared) and `Reopen` (`:2556`, unique). **No query reader takes it.**
+- **Growing segments have no read gate:** `AcquireSegmentReadLease` returns `nullptr` for
+  `SegmentType::Growing` (`internal/core/src/segcore/segment_c.cpp:415-417`). The sealed drain gate that
+  serializes reopen-vs-read does not exist here.
+- Reader paths dereference `schema_` lock-free: `SegmentGrowingImpl::get_schema()` returns `*schema_`
+  (`SegmentGrowingImpl.h:217-218`, a bare `const Schema&`), consumed by `query::SearchOnGrowing`
+  (`SearchOnGrowing.cpp:65` `auto& schema = segment.get_schema();`, `:69` `auto& field =
+  schema[vecfield_id];` — a `const FieldMeta&` held **for the whole search**), and by
+  `bulk_subscript` (`:1616,1643`), plus ~40 other `schema_->` sites, none under `sch_mutex_`.
+
+**Reachability (external):** a loaded growing segment (recently-inserted, not-yet-flushed data) serving
+concurrent `Search`/`Query` while `AddCollectionField` raises the collection schema version → the next
+query's `LazyCheckSchema` (`segment_c.cpp:487`, called *before* any lease) invokes `Reopen`, swapping
+`schema_` under a reader.
+
+**Failure modes:**
+- **Data race (confirmed, UB):** concurrent non-atomic read (`schema_->…` in one thread) and write
+  (`schema_ = sch` in another) of a `shared_ptr` is a data race by the C++ memory model — TSan will flag
+  it deterministically. (On x86-64 a single-word `operator->` deref reads a coherent old-or-new pointer,
+  so it does not *itself* tear into a wild pointer; the escalation below is the memory-safety impact.)
+- **Use-after-free (conditional):** `schema_ = sch` drops the segment's strong ref to the old `Schema`.
+  If that was the **last** strong ref, `~Schema()` frees the `FieldMeta` storage while an in-flight
+  `SearchOnGrowing` still holds `const FieldMeta& field` into it → heap-use-after-free read (dim /
+  data-type / analyzer-params consumed downstream). Whether it is the last ref depends on other holders
+  (the triggering query's own plan schema, any querynode collection-schema cache). **This lifetime
+  condition is the open question the repro settles** — I did not prove the old `Schema` is uniquely
+  owned by the segment at swap time, so C1 is reported as a *confirmed data race with a
+  lifetime-conditional UAF escalation*, not a proven unconditional UAF.
+
+**Why the existing test misses it:** `internal/core/unittest/test_growing_concurrent_reopen.cpp` reads
+only an existing field and **retains strong refs to every schema version for the whole round**, so no
+old `Schema` is ever freed (masks the UAF), and it runs without TSan (misses the race).
+
+**Repro plan.** Build ASan: `scripts/core_build.sh -a`. Extend `test_growing_concurrent_reopen.cpp`:
+(1) a writer thread looping `impl->Reopen(make_schema(k))` where each `make_schema` **adds a field**
+(changes field count) and the temporary is **not retained** (so the swap drops the old schema's last
+external ref); (2) reader threads looping `vector_search` / `Retrieve` (they hold `const FieldMeta&`
+across the call, unlike single-offset scalar `bulk_subscript`). Expected ASan: `heap-use-after-free
+READ`, free stack in `~Schema` / `shared_ptr<Schema>::operator=` from `Reopen …:2613`, use stack in
+`SearchOnGrowing.cpp:69`. For the race independent of the free, add a TSan build (CMake block below) —
+it reports `data race … Write … SegmentGrowingImpl.cpp:2613` vs `Read … SearchOnGrowing.cpp:65` on the
+`schema_` member on the first overlap, even with all schemas retained.
+
+```cmake
+# add to internal/core/CMakeLists.txt next to the USE_ASAN block (~:230), + a -t flag in core_build.sh
+if (USE_TSAN STREQUAL "ON")
+    add_compile_options(-fno-omit-frame-pointer -fsanitize=thread)
+    add_link_options(-fsanitize=thread)
+endif()
+```
+
+**Fix direction (not applied):** bring the growing path to the sealed discipline — either make readers
+capture an **owning** `SchemaPtr` snapshot for the query lifetime (return `SchemaPtr` from
+`get_schema()` / atomically publish `schema_` via `std::atomic_load`/`atomic_store` COW), or hold
+`sch_mutex_` (shared) across every `schema_` deref. Per G1 the fix must cover *all* ~40 `schema_`/
+`get_schema()` read sites, not just `bulk_subscript`.
+
+**Cleared (sealed reopen):** the sealed path (`ChunkedSegmentSealedImpl`) is sound. `published_state_`
+is accessed only via `std::atomic_load`/`atomic_store` (`:960,1963,4776` — no plain member read exists);
+writes clone-on-write (`BuildNextPublishedState`→`ClonePublishedState`, bitsets `.clone()`d) then
+`atomic_store`; destructive `DropFieldData`/`DropIndex` and all `Reopen` overloads stage into a fresh
+clone and publish under the `SegmentReadGate` **Drain** (`SegmentReadLease.h:198-244`), which blocks
+until `active_readers==0`; the query-time `LazyCheckSchema` uses **FailFast** (refuses to publish while
+readers are active). The read lease is held for the entire search+result lifetime (`segment_c.cpp:488`
+→ `SearchResult::read_lease_`), protecting borrowed spans. **Latent hazards** (defensive, not live):
+`ChunkedSegmentSealedImpl::get_schema()` returns a bare `const Schema&` into the now-swappable schema
+(`:3575`) — safe for leased query callers but a hazard for auxiliary non-leased callers
+(`SegmentInterface.cpp:728,751`); recommend returning `SchemaPtr`. Two invariants could not be verified
+in-tree (the `cachinglayer::CacheSlot`/`CacheAccessor` pin-ownership contract, and
+`ChunkedColumnInterface::CancelWarmup()` semantics — both external modules absent from this checkout);
+they underpin the pin-safety of every span-returning accessor and `DropFieldData`'s pre-drain
+`CancelWarmup` (`:4002`).
+
+### C2 — StorageV1 index mmap-target path missing generation suffix → SIGBUS / corrupt-index OOB (thread #1, EXTERNAL-triggered)
+
+The DiskFileManager download-cache fix (#50608) is **complete** — every local prefix routes through
+`AppendLocalPathGeneration` (per-instance `g_file_path_generation` suffix) + write-lease
+(`DiskFileManagerImpl.cpp`), verified across all getters and their consumers (DiskANN, tantivy, text,
+ngram, scalar-sort, json-stats). **But it stops at the mmap-target boundary.** The StorageV1 index
+translator builds the mmap file path with **no** generation suffix and **no** lease:
+
+`SealedIndexTranslator::get_cells` (`internal/core/src/segcore/storagev1translator/SealedIndexTranslator.cpp:168-173`):
+```cpp
+auto base_path = mmap_dir_path / "index_files" / index_id / segment_id / field_id;
+config_[MMAP_FILE_PATH] = (base_path / "index").string();   // stable key, no per-instance suffix
+```
+This feeds `VectorMemIndex::LoadFromFile` / scalar mmap indexes, which `FileWriter`-open the path
+`O_CREAT|O_RDWR|O_TRUNC` (`FileWriter.cpp:141`), `mmap(MAP_SHARED)` it, and register
+`MmapFileRAII` whose destructor `unlink()`s that exact path (`common/File.h:151`). Two live instances of
+the same index cell (same `index_id/segment_id/field_id`) therefore resolve to **one file**:
+- **delete/overwrite-while-mmapped:** an evicted-but-still-pinned instance holds the `MAP_SHARED`
+  mapping while a replacing load `O_TRUNC`s the same inode → the old mapping reads zero/half-written
+  pages → **SIGBUS in a query thread**, or a corrupt-index OOB read.
+
+**In-tree corroboration (decisive):** the repo already fixes this exact race for StorageV2 column
+groups — `GroupChunkTranslator.cpp:509-514` appends `g_mmap_path_generation` with the comment *"the new
+FileWriter would O_TRUNC the same file that the old translator's MAP_SHARED mmap still references,
+causing SIGBUS on concurrent reads."* That guard exists only in the two V2 translators
+(`GroupChunkTranslator.cpp:514`, `ManifestGroupTranslator.cpp:489`); the V1 **index**
+(`SealedIndexTranslator`) and V1 field-data (`ChunkTranslator.cpp:196`,
+`DefaultValueChunkTranslator.cpp:281`) paths were left out. Index cells go through the same
+`cachinglayer` CacheSlot machinery, so cell replacement (which the V2 comment names as the trigger) hits
+the same window.
+
+**Reachability (external-triggered):** index rebuild / version bump on a loaded collection
+(`CreateIndex`/alter — new index version loads while queries run on the old), load/release collection
+cycling, or cache eviction + immediate re-query of the same sealed index. The DiskFileManager
+generation isolates the *download* cache per load, but the *mmap target* path is shared across those
+loads.
+
+**Repro plan.** `scripts/core_build.sh -a -u`. The existing `DiskFileManagerTest.cpp` generation tests
+pass and give false confidence (they cover the download cache, not the mmap target). Add a translator-
+layer stress test driving two threads at the **same** `MMAP_FILE_PATH`: thread A writes a known byte
+pattern, `mmap(MAP_SHARED)`, and loops reads (simulating a pinned in-flight query), then `unlink`s
+(simulating `~MmapFileRAII`); thread B loops `FileWriter`(O_TRUNC)+rewrite (simulating a replacing
+load). Confirmation: torn reads (pattern B/zero where A's pattern was) and/or SIGBUS when B truncates a
+file A still maps beyond new EOF — under ASan a corrupted-read/`heap-use-after-free` report. A self-
+contained skeleton using `storage::FileWriter` + raw `mmap`/`unlink` reproduces it without a full
+segment. **Fix direction (not applied):** mirror `g_mmap_path_generation` into
+`SealedIndexTranslator.cpp:168` (and the two V1 field-data translators) so a replacing load writes a
+distinct inode and the old `MmapFileRAII::unlink` only removes its own generation.
+
+
+
+### A1 — `RestoreSnapshot` cross-database privilege bypass (thread #3, EXTERNAL, authz)
+
+The db-scope fix #50690 special-cases exactly one cross-db request — `RenameCollection` — forcing the
+authorization db to `AnyWord` (cluster scope) when source ≠ target
+(`internal/proxy/privilege_interceptor.go:102-104`). `RestoreSnapshotRequest` has the **same
+source-db→target-db shape but was not covered**, and it is a **Collection-level** privilege
+(`PrivilegeRestoreSnapshot`, `pkg/util/constant.go:370`, in `CollectionAdminPrivileges`), so it is
+**not** forced to `AnyWord` at `privilege_interceptor.go:96-98`.
+
+- **Authorization db = source.** `privilege_interceptor.go:95` → `GetCurDBNameFromRequestOrContext` →
+  `RestoreSnapshotRequest.GetDbName()` (field #3, source). The authz resource is
+  `{source_db, source_collection, RestoreSnapshot}`.
+- **Execution db = target.** `internal/proxy/task_snapshot.go:563` uses source `GetDbName()` only to
+  resolve the *source* collection; `Execute` (`:587`) sends `TargetDbName: rst.req.GetTargetDbName()`
+  (field #6) to datacoord, which creates the restored collection in the **target** db
+  (`internal/datacoord/services.go:2501-2506`). No authz is performed against the target db anywhere.
+
+**Bypass:** a user granted `RestoreSnapshot` on `db_a` only issues
+`RestoreSnapshotRequest{DbName:"db_a", CollectionName:"c_src", TargetDbName:"db_b",
+TargetCollectionName:"c_new"}`. Authz passes (scoped to `db_a`), but the restore **materializes
+collection `c_new` inside `db_b`** — a database the user holds no privilege on. Cross-database
+privilege escalation, exactly the class #50690 closed for RenameCollection.
+
+**Audit scope:** all 107 privilege-bearing message types (reflected over `commonpb.E_PrivilegeExtObj`)
+were classified. Every non-Cluster type implements `DBNameGetter` (so the context-fallback class is
+clean), and of the 4 multi-db-field non-Cluster types, `HybridSearch` / `AlterDatabase` /
+`RenameCollection` do not diverge. **`RestoreSnapshot` is the sole divergence.**
+
+**Verification status:** by inspection only. This environment **cannot build the Go `proxy` package** —
+it depends via cgo/pkg-config on compiled native libs (`milvus_core`, `rdkafka`, `rocksdb`,
+`milvus-storage`), which are absent — so the unit-test repro below was **not** run here.
+
+**Repro (unit test — run in a full build).** Add to `internal/proxy/privilege_interceptor_test.go`
+(mirrors `TestPrivilegeInterceptorRenameCollection`):
+
+```go
+func TestPrivilegeInterceptorRestoreSnapshotCrossDB(t *testing.T) {
+    paramtable.Init()
+    Params.Save(Params.CommonCfg.AuthorizationEnabled.Key, "true")
+    defer Params.Reset(Params.CommonCfg.AuthorizationEnabled.Key)
+
+    client := &MockMixCoordClientInterface{}
+    client.listPolicy = func(ctx context.Context, in *internalpb.ListPolicyRequest) (*internalpb.ListPolicyResponse, error) {
+        return &internalpb.ListPolicyResponse{
+            Status: merr.Success(),
+            PolicyInfos: []string{ // RestoreSnapshot granted on db_a only
+                funcutil.PolicyForPrivilege("role_snap", commonpb.ObjectType_Collection.String(), "*",
+                    commonpb.ObjectPrivilege_PrivilegeRestoreSnapshot.String(), "db_a"),
+            },
+            UserRoles: []string{funcutil.EncodeUserRoleCache("snapuser", "role_snap")},
+        }, nil
+    }
+    assert.NoError(t, InitMetaCache(context.Background(), client))
+
+    // same-db (db_a->db_a): allowed — validates the grant matches.
+    _, err := PrivilegeInterceptor(GetContext(context.Background(), "snapuser:pwd"),
+        &milvuspb.RestoreSnapshotRequest{DbName: "db_a", CollectionName: "c_src",
+            TargetDbName: "db_a", TargetCollectionName: "c_new"})
+    assert.NoError(t, err)
+
+    // cross-db (db_a->db_b): MUST be denied. On current HEAD this assertion FAILS
+    // (interceptor returns nil = allowed) -> that failure is the proof of bypass.
+    _, err = PrivilegeInterceptor(GetContext(context.Background(), "snapuser:pwd"),
+        &milvuspb.RestoreSnapshotRequest{DbName: "db_a", CollectionName: "c_src",
+            TargetDbName: "db_b", TargetCollectionName: "c_new"})
+    assert.Error(t, err)
+}
+```
+Run: `go test -tags dynamic,test -gcflags="all=-N -l" -count=1 ./internal/proxy/ -run TestPrivilegeInterceptorRestoreSnapshotCrossDB`
+(requires the compiled core on `PKG_CONFIG_PATH`). Pre-fix: the cross-db assertion **fails** (err nil =
+allowed) — the proof. **End-to-end (pymilvus):** create `db_a`+`db_b`; grant a user `RestoreSnapshot`
+on `db_a` only; as admin snapshot a collection in `db_a`; as the user restore with `db_name=db_a`,
+`target_db_name=db_b`. Secure = PermissionDenied; bug = collection created in `db_b`.
+
+**Fix direction (not applied):** extend the cross-db guard at `privilege_interceptor.go:102-104` to
+`RestoreSnapshotRequest` (`GetDbName() != GetTargetDbName()` → `AnyWord`), pre-filling an empty
+`TargetDbName` from the context db (as `DatabaseInterceptor` does for `RenameCollection.NewDBName`)
+before comparing.
 
 ## Killed / cleared
 
@@ -521,11 +751,18 @@ invariant:
 - **`group_size_` int overflow** (`SearchGroupByOperator.cpp:282-283`) — `topk_ * group_size_ * niter`
   int multiply; only the proxy cap (`search_util.go:937`, `MaxGroupSize`) prevents it. Add a C++ clamp.
 
-### Residual follow-ups from the prior hunt (not re-verified here)
-- **F2/F3 (prior):** local index-cache TOCTOU (`5eb509aa`/#50608) and segcore reopen publication
-  staging (`e6d549ef`/#50580) were not exhaustively variant-modeled.
-- **RBAC:** request types lacking a `DBNameGetter` — confirm authz-db and execution-db can't diverge.
+### Residual follow-ups from the prior hunt
+
+The three residual threads flagged by the prior hunt were **resumed and are now written up above**:
+- local index-cache TOCTOU (`5eb509aa`/#50608) → **C2** (found the StorageV1 mmap-target gap).
+- segcore reopen publication staging (`e6d549ef`/#50580) → **C1** (sealed cleared; growing race found).
+- RBAC request types lacking a `DBNameGetter` → **A1** (found the `RestoreSnapshot` cross-db bypass).
+
+Still open (not yet run):
 - **Assertion-as-DoS sweep:** `exec/expression` + `exec/operator` asserts that depend on attacker batch
   *shape* rather than internal invariants (D3 is one instance).
-</content>
-</invoke>
+- **`get_schema()` reference-return hardening** on both sealed and growing (return `SchemaPtr`) — noted
+  under C1; independent of whether the growing UAF (C1) is proven unconditional.
+- **cachinglayer pin-ownership contract** (`CacheSlot`/`CacheAccessor`) and
+  `ChunkedColumnInterface::CancelWarmup()` semantics — external modules absent from this checkout;
+  they underpin the sealed reopen "cleared" verdict (C1) and should be confirmed against the full tree.
