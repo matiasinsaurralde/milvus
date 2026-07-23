@@ -437,21 +437,89 @@ the querynode stays up (no `std::terminate`).
 
 ---
 
-## Open RCE research threads (in progress / to continue)
+## Additional surfaces investigated — cleared / defense-in-depth
 
-These were being actively investigated when this document was written; fold results in here as they land.
+These three surfaces were swept for externally-reachable RCE. None yielded a new externally-reachable
+memory-corruption bug; each surfaced concrete latent / defense-in-depth gaps worth hardening.
 
-1. **StorageV3 / milvus-storage packed reader** (`internal/core/src/storage/loon_ffi/`,
-   external-collection refresh). The decisive question is whether a tenant with
-   `RefreshExternalCollection`/external-table privilege can point a collection at packed/manifest files
-   whose **contents** they control (vs. Milvus-generated), and whether the C++ packed reader trusts a
-   size/offset/dim from those files. If yes, this would be the **externally-reachable** analogue of N1.
-2. **Scalar ARRAY element access** (`arr[i]`, `array_length`, `array_contains`) — whether an
-   attacker-controlled array index (from the expr `nested_path`, parsed via `std::stoi`) or a per-row
-   element offset reaches an unchecked memory access at query time (sibling of the #51540 class).
-3. **Delete/PK path and search-result reduce** — whether a count/offset mismatch (num_pks vs
-   num_timestamps vs num_rows; `slice_nqs`/`slice_topKs`/prefix-sums from the request) drives an
-   unvalidated allocation/index in segcore.
+### S1 — StorageV3 / milvus-storage packed reader + external collections
+
+**Important reachability fact:** the external-collection load path is **genuinely attacker-byte
+controlled**. A tenant supplies a fully user-chosen URI (`ValidateExternalSource`,
+`pkg/util/externalspec/external_spec.go:170` checks only scheme/host/no-userinfo) with their **own**
+credentials (`extfs` must be self-sufficient, "no inheritance from Milvus fs.\* config",
+`external_spec.go:216`), and the files are **referenced, not copied** into the manifest
+(`internal/datanode/external/task_update.go:1003`; `milvus_table_deltalog.go:59` "keep their source
+paths … instead of copying"). So a querynode later reads packed/parquet/manifest bytes from storage the
+tenant controls — unlike the classic import path (N1), which re-derives dim and re-serializes.
+
+**Why the classic OOB class does NOT reproduce here:** the load path
+(`ChunkedSegmentSealedImpl::ApplyLoadDiff` → `LoadColumnGroups` → `ManifestGroupTranslator`) runs
+`NormalizeArrowForChunkWriter` / `NormalizeExternalArrowByType` on every field **before** any
+`ChunkWriter` touches it (`ManifestGroupTranslator.cpp:475-478`), which validates file-native arrow
+widths against the schema dim/type: `ValidateFixedSizeBinaryVectorWidth` (`storage/Util.cpp:1941`),
+`ValidateBinaryVectorWidth` (`:1958`), and the LIST→FSB per-row `actual==expected` check *before* the
+`FastMemcpy` (`:2157-2168`). A crafted parquet whose vector width ≠ schema dim is rejected with
+`SegcoreError`, not an OOB. Manifest `num_rows`/`row_count` is trusted only for accounting (OOM/assert,
+not memory access; cross-checked at `GroupChunkTranslator.cpp:202`). loon FFI errors throw
+(`loon_ffi/util.cpp:146-151`); no trusted size crosses the boundary as a raw count.
+
+**Latent gap (LOW now, HIGH if it regresses):** `GroupChunkTranslator::load_group_chunk`
+(`internal/core/src/segcore/GroupChunkTranslator.cpp:446-550`) feeds file-native arrow **directly** into
+`create_group_chunk` with **no** `NormalizeArrowForChunkWriter`, and `ChunkWriter<FixedSizeBinaryArray,T>`
+reads `array->length() * dim_ * sizeof(T)` using the **schema** `dim_`, ignoring the arrow `byte_width`
+(`ChunkWriter.h:108,138`) — an OOB heap over-read if a narrower FSB reached it. Today this translator is
+gated to `storage_version==2` (internal Milvus-written packed segments,
+`ChunkedSegmentSealedImpl.cpp:2009-2016`); external collections are pinned to `StorageV3`
+(`task_update.go:989`, `milvus_table_refresh.go:216`), so attacker bytes cannot reach it. It becomes
+attacker-reachable the moment any external/referenced-file path sets `storage_version==2` or reuses
+`GroupChunkTranslator`. **Hardening:** validate arrow `byte_width` unconditionally inside `ChunkWriter` /
+`create_group_chunk` (don't rely on the caller normalizing), or add a guarding comment + assert.
+
+### S2 — Scalar ARRAY element access (query-index path: SAFE)
+
+The attacker-controlled query index `arr[i]` (from `nested_path`, `std::stoi` at eval) is
+**soundly bounds-checked** at every site: `Array::get_data<T>`/`ArrayView::get_data<T>` assert
+`0 <= index < length_` (`Array.h:260-263,530-533`, an always-on throwing `AssertInfo`), and every
+evaluator pre-guards `index >= data[offset].length()` (`UnaryExpr.h:485,546,559,588,608`;
+`BinaryArithOpEvalRangeExpr.cpp:715`; `TermExpr.cpp:464`; `JsonContainsExpr.cpp:377,416`). String
+sub-offsets are Milvus-recomputed at serialization, not raw attacker bytes. Residual **write-side,
+size-gated** hardening gaps only:
+- **`ArrayChunkWriter` missing uint32 overflow guard** — `internal/core/src/common/ChunkWriter.cpp:287,295`
+  push `static_cast<uint32_t>(cursor)` with no check, while sibling `StringChunkWriter` (`:69-71`) and
+  `JSONChunkWriter` (`:142-144`) assert `cursor <= UINT32_MAX`. A chunk with >4 GB of array payload wraps
+  the header offset → query-time OOB read via `ArrayChunk::View` (`Chunk.h:415-418`). Gated by chunk-size
+  limits. **Fix:** add the same assert.
+- **`ArrayChunk::View(int idx)`** (`Chunk.h:412-431`) lacks the `idx < row_nums_` assert its
+  `VectorArrayChunk::View` sibling has (`Chunk.h:538-542`). Callers pass bounded offsets; defense-in-depth.
+- **`Array.h:124` `int size_` accumulator** (`//type risk`) — signed 32-bit total-string-bytes overflow
+  → under-alloc + OOB write on the *serialization* path; needs ~2 GB in one array row, blocked by the
+  default-on proxy `checkMaxLen`/`checkMaxCap`. Harden to `int64_t`.
+- **`std::stoi(nested_path_[0])`** (`UnaryExpr.cpp:462`, `BinaryArithOpEvalRangeExpr.cpp:687`,
+  `TermExpr.cpp:415`) throws on a non-numeric/oversize index — controlled exception (query error), not
+  corruption.
+
+### S3 — Delete/PK path + search-result reduce (internal-only / self-consistent by construction)
+
+The C++ reduce was refactored (slicing/group-merge moved to Go; `reduce_c.cpp` no longer exists). No
+externally-reachable bug; all residuals rely on internal Go construction discipline rather than a C++
+invariant:
+- **`ParsePksFromIDs` count trust** (`internal/core/src/segcore/Utils.cpp:169-189`) — `pks` is sized from
+  the caller `size`, never asserted equal to the proto element count `GetSizeOfIdArray(*ids)`. VARCHAR
+  with proto > size → `std::copy` heap OOB **write**; INT64 with proto < size → OOB read. Callers
+  (`SegmentGrowingImpl.cpp:1235`, `ChunkedSegmentSealedImpl.cpp:6424`, the `LoadDeletedRecord` pair)
+  currently derive both from the same Go source (`internal/util/segcore/segment.go:290`), so the online
+  path is self-consistent — luck of construction, not defense. **Fix:** `AssertInfo(size == GetSizeOfIdArray(*ids))`.
+- **Delete timestamps length parity** — `internal/querynodev2/services.go:1622,1689` pass
+  `req.GetTimestamps()` to `segment.Delete` without checking `len(pks) == len(tss)`; C++ then reads `size`
+  timestamps (`SegmentGrowingImpl.cpp:1239-1242`). The sibling `UseLoad` branch **does** validate
+  (`internal/storage/delta_data.go:126`). Internal worker→worker gRPC; the proxy/streaming layer sets the
+  counts equal. **Fix:** restore parity (length check or C++ assert).
+- **`bulk_subscript_impl` offset bound** (`ChunkedSegmentSealedImpl.cpp:4986`) — no `0 <= offset < num_rows`
+  check; `FillOutputFieldsOrdered` (`search_result_export_c.cpp:942-968`) re-enters it with Go-reduce
+  offsets that aren't re-validated (the search path validates them at `reduce/Reduce.cpp:147-153`).
+- **`group_size_` int overflow** (`SearchGroupByOperator.cpp:282-283`) — `topk_ * group_size_ * niter`
+  int multiply; only the proxy cap (`search_util.go:937`, `MaxGroupSize`) prevents it. Add a C++ clamp.
 
 ### Residual follow-ups from the prior hunt (not re-verified here)
 - **F2/F3 (prior):** local index-cache TOCTOU (`5eb509aa`/#50608) and segcore reopen publication
